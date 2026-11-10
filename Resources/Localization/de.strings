@@ -540,18 +540,18 @@
 "Left side when closed" = "Links im geschlossenen Zustand";
 "Right side when closed" = "Rechts im geschlossenen Zustand";
 
-/* Milk */
-"%@ + Milk" = "%@ + Milch";
-"Battery is at %@, Milk needs more than %@." = "Akku bei %@, Milch braucht mehr als %@.";
-"Milk needs your password once to allow `pmset disablesleep`." = "Milch braucht einmal dein Passwort, um `pmset disablesleep` zu erlauben.";
+/* Espresso */
+"%@ + Espresso" = "%@ + Espresso";
+"Battery is at %@, Espresso needs more than %@." = "Akku bei %@, Espresso braucht mehr als %@.";
+"Espresso needs your password once to allow `pmset disablesleep`." = "Espresso braucht einmal dein Passwort, um `pmset disablesleep` zu erlauben.";
 "Couldn't disable lid sleep (pmset failed)." = "Deckel-Ruhezustand konnte nicht deaktiviert werden (pmset fehlgeschlagen).";
-"Milk turned off: battery at %@." = "Milch ausgeschaltet: Akku bei %@.";
-"Rıhtım wants to allow Milk to keep the Mac awake with the lid closed." = "Rıhtım möchte Milch erlauben, den Mac bei geschlossenem Deckel wach zu halten.";
-"Milk: keep running with the lid closed" = "Milch: bei geschlossenem Deckel weiterlaufen";
-"Milk" = "Milch";
-"Milk (lid closed)" = "Milch (Deckel zu)";
+"Espresso turned off: battery at %@." = "Espresso ausgeschaltet: Akku bei %@.";
+"Rıhtım wants to allow Espresso to keep the Mac awake with the lid closed." = "Rıhtım möchte Espresso erlauben, den Mac bei geschlossenem Deckel wach zu halten.";
+"Espresso: keep running with the lid closed" = "Espresso: bei geschlossenem Deckel weiterlaufen";
+"Espresso" = "Espresso";
+"Espresso (lid closed)" = "Espresso (Deckel zu)";
 "Lid sleep is off. Downloads, builds and Claude keep running with the lid closed." = "Deckel-Ruhezustand aus. Downloads, Builds und Claude laufen bei geschlossenem Deckel weiter.";
 "Turn off on battery at %@" = "Im Akkubetrieb bei %@ ausschalten";
-"Turns Coffee on and runs `pmset disablesleep` so the Mac doesn't sleep when the lid closes. Asks for your password once (a sudoers rule that allows only that command). Lid sleep comes back when Coffee ends, on quit, and after a crash. Don't put the Mac in a bag while Milk is on: it can get hot." = "Schaltet Kaffee ein und führt `pmset disablesleep` aus, damit der Mac beim Zuklappen nicht schläft. Fragt einmal nach dem Passwort (eine sudoers-Regel nur für diesen Befehl). Der Deckel-Ruhezustand kommt zurück, wenn Kaffee endet, beim Beenden und nach einem Absturz. Den Mac mit Milch nicht in die Tasche stecken: er kann heiß werden.";
-"Milk on: keeps running with the lid closed" = "Milch an: läuft bei geschlossenem Deckel weiter";
-"Milk off" = "Milch aus";
+"Turns Coffee on and runs `pmset disablesleep` so the Mac doesn't sleep when the lid closes. Asks for your password once (a sudoers rule that allows only that command). Lid sleep comes back when Coffee ends, on quit, and after a crash. Don't put the Mac in a bag while Espresso is on: it can get hot." = "Schaltet Kaffee ein und führt `pmset disablesleep` aus, damit der Mac beim Zuklappen nicht schläft. Fragt einmal nach dem Passwort (eine sudoers-Regel nur für diesen Befehl). Der Deckel-Ruhezustand kommt zurück, wenn Kaffee endet, beim Beenden und nach einem Absturz. Den Mac mit Espresso nicht in die Tasche stecken: er kann heiß werden.";
+"Espresso on: keeps running with the lid closed" = "Espresso an: läuft bei geschlossenem Deckel weiter";
+"Espresso off" = "Espresso aus";

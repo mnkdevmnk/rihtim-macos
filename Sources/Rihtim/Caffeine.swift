@@ -25,45 +25,46 @@ final class Caffeine: ObservableObject {
     private var hasAssertion = false
     private var timer: Timer?
 
-    /// Milk: Coffee that keeps going with the lid closed / display off (see `LidSleep`).
-    @Published var milk = false {
+    /// Espresso: Coffee that keeps going with the lid closed / display off (see `LidSleep`).
+    @Published var espresso = false {
         didSet {
-            guard milk != oldValue else { return }
-            UserDefaults.standard.set(milk, forKey: "caffeineMilk")
-            if milk { milkError = nil }
-            if milk && !isActive { activate(minutes: nil) } else { applyMilk() }
+            guard espresso != oldValue else { return }
+            UserDefaults.standard.set(espresso, forKey: "caffeineMilk")
+            if espresso { espressoError = nil }
+            if espresso && !isActive { activate(minutes: nil) } else { applyEspresso() }
         }
     }
     /// Lid sleep is really disabled right now.
-    @Published private(set) var milkActive = false
-    @Published private(set) var milkError: String?
-    /// Milk turns itself off on battery at or below this level.
-    @Published var milkMinBattery = 15 {
-        didSet { UserDefaults.standard.set(milkMinBattery, forKey: "caffeineMilkMinBattery") }
+    @Published private(set) var espressoActive = false
+    @Published private(set) var espressoError: String?
+    /// Espresso turns itself off on battery at or below this level.
+    @Published var espressoMinBattery = 15 {
+        didSet { UserDefaults.standard.set(espressoMinBattery, forKey: "caffeineMilkMinBattery") }
     }
     private var batteryTimer: Timer?
 
     init() {
         let d = UserDefaults.standard
+        // Espresso was called Milk at first; the stored keys keep that name.
         d.register(defaults: ["caffeineDisplay": true, "caffeineMilkMinBattery": 15])
         keepDisplayOn = d.bool(forKey: "caffeineDisplay")
-        milkMinBattery = d.integer(forKey: "caffeineMilkMinBattery")
-        // Set before `milk`'s didSet can matter: Coffee starts off, so nothing is applied.
-        milk = d.bool(forKey: "caffeineMilk")
+        espressoMinBattery = d.integer(forKey: "caffeineMilkMinBattery")
+        // Set before `espresso`'s didSet can matter: Coffee starts off, so nothing is applied.
+        espresso = d.bool(forKey: "caffeineMilk")
         LidSleep.cleanUpAfterCrash()
     }
 
     /// Called on quit: never leave lid sleep disabled behind.
     func shutdown() {
-        if milkActive { _ = LidSleep.set(disabled: false) }
-        milkActive = false
+        if espressoActive { _ = LidSleep.set(disabled: false) }
+        espressoActive = false
     }
 
     func activate(minutes: Int?) {
         selectedMinutes = minutes
         assert()
         isActive = hasAssertion
-        applyMilk()
+        applyEspresso()
         endsAt = minutes.map { Date().addingTimeInterval(TimeInterval($0 * 60)) }
         timer?.invalidate()
         timer = nil
@@ -82,7 +83,7 @@ final class Caffeine: ObservableObject {
         release()
         isActive = false
         endsAt = nil
-        applyMilk()
+        applyEspresso()
     }
 
     func toggle() { isActive ? deactivate() : activate(minutes: nil) }
@@ -102,39 +103,39 @@ final class Caffeine: ObservableObject {
     var shortStatus: String {
         guard isActive else { return L("Off") }
         let base = endsAt.map { Fmt.until($0) } ?? L("Indefinitely")
-        return milkActive ? L("%@ + Milk", base) : base
+        return espressoActive ? L("%@ + Espresso", base) : base
     }
 
-    // MARK: Milk
+    // MARK: Espresso
 
-    private func applyMilk() {
-        let want = isActive && milk
-        if want && !milkActive {
-            if let battery = Self.batteryLevel(), battery <= milkMinBattery {
-                milkError = L("Battery is at %@, Milk needs more than %@.", Fmt.pct(battery), Fmt.pct(milkMinBattery))
-                milk = false
+    private func applyEspresso() {
+        let want = isActive && espresso
+        if want && !espressoActive {
+            if let battery = Self.batteryLevel(), battery <= espressoMinBattery {
+                espressoError = L("Battery is at %@, Espresso needs more than %@.", Fmt.pct(battery), Fmt.pct(espressoMinBattery))
+                espresso = false
                 return
             }
             if !LidSleep.isAllowed && !LidSleep.install() {
-                milkError = L("Milk needs your password once to allow `pmset disablesleep`.")
-                milk = false
+                espressoError = L("Espresso needs your password once to allow `pmset disablesleep`.")
+                espresso = false
                 return
             }
             guard LidSleep.set(disabled: true) else {
-                milkError = L("Couldn't disable lid sleep (pmset failed).")
-                milk = false
+                espressoError = L("Couldn't disable lid sleep (pmset failed).")
+                espresso = false
                 return
             }
-            milkActive = true
-            milkError = nil
+            espressoActive = true
+            espressoError = nil
             startBatteryWatch()
-            Diag.log("milk: lid sleep disabled")
-        } else if !want && milkActive {
+            Diag.log("espresso: lid sleep disabled")
+        } else if !want && espressoActive {
             _ = LidSleep.set(disabled: false)
-            milkActive = false
+            espressoActive = false
             batteryTimer?.invalidate()
             batteryTimer = nil
-            Diag.log("milk: lid sleep restored")
+            Diag.log("espresso: lid sleep restored")
         }
     }
 
@@ -142,9 +143,9 @@ final class Caffeine: ObservableObject {
         batteryTimer?.invalidate()
         let t = Timer(timeInterval: 60, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated {
-                guard let self, self.milkActive, let level = Self.batteryLevel(), level <= self.milkMinBattery else { return }
-                self.milkError = L("Milk turned off: battery at %@.", Fmt.pct(level))
-                self.milk = false
+                guard let self, self.espressoActive, let level = Self.batteryLevel(), level <= self.espressoMinBattery else { return }
+                self.espressoError = L("Espresso turned off: battery at %@.", Fmt.pct(level))
+                self.espresso = false
             }
         }
         RunLoop.main.add(t, forMode: .common)
@@ -219,11 +220,11 @@ enum LidSleep {
         return ok
     }
 
-    /// If Rıhtım crashed while Milk was on, lid sleep is still disabled: restore it.
+    /// If Rıhtım crashed while Espresso was on, lid sleep is still disabled: restore it.
     static func cleanUpAfterCrash() {
         guard UserDefaults.standard.bool(forKey: appliedKey) else { return }
         if isDisabled { set(disabled: false) } else { UserDefaults.standard.set(false, forKey: appliedKey) }
-        Diag.log("milk: restored lid sleep left over from the last run")
+        Diag.log("espresso: restored lid sleep left over from the last run")
     }
 
     /// Asks for the admin password once and installs the sudoers rule (checked with visudo).
@@ -234,10 +235,10 @@ enum LidSleep {
         let sh = "t=$(/usr/bin/mktemp) && printf '%s\\n' '\(rule)' > \"$t\" && /usr/sbin/visudo -cf \"$t\" && "
             + "/usr/bin/install -m 0440 -o root -g wheel \"$t\" \(sudoersPath); r=$?; /bin/rm -f \"$t\"; exit $r"
         let script = "do shell script \"\(sh.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\""))\" "
-            + "with prompt \"\(L("Rıhtım wants to allow Milk to keep the Mac awake with the lid closed."))\" with administrator privileges"
+            + "with prompt \"\(L("Rıhtım wants to allow Espresso to keep the Mac awake with the lid closed."))\" with administrator privileges"
         var err: NSDictionary?
         NSAppleScript(source: script)?.executeAndReturnError(&err)
-        if let err { Diag.log("milk: install failed \(err)") }
+        if let err { Diag.log("espresso: install failed \(err)") }
         return err == nil && isAllowed
     }
 
@@ -304,7 +305,7 @@ struct CaffeineMenuItems: View {
         }
         Divider()
         Button((caffeine.keepDisplayOn ? "✓ " : "") + L("Keep the display on too")) { caffeine.keepDisplayOn.toggle() }
-        Button((caffeine.milk ? "✓ " : "") + L("Milk: keep running with the lid closed")) { caffeine.milk.toggle() }
+        Button((caffeine.espresso ? "✓ " : "") + L("Espresso: keep running with the lid closed")) { caffeine.espresso.toggle() }
         if caffeine.isActive { Button(L("Turn off")) { caffeine.deactivate() } }
     }
 }
@@ -333,8 +334,8 @@ struct CaffeineChooser: View {
                 }
             }
             Chip(title: L("Display"), symbol: "display", on: caffeine.keepDisplayOn) { caffeine.keepDisplayOn.toggle() }
-            Chip(title: L("Milk"), symbol: "drop.fill", on: caffeine.milk) { caffeine.milk.toggle() }
-                .help(L("Milk: keep running with the lid closed"))
+            Chip(title: L("Espresso"), symbol: "cup.and.heat.waves.fill", on: caffeine.espresso) { caffeine.espresso.toggle() }
+                .help(L("Espresso: keep running with the lid closed"))
         }
     }
 }

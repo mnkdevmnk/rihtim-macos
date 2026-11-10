@@ -894,18 +894,18 @@ private struct ExtrasPage: View {
                 .pickerStyle(.segmented)
                 Toggle(L("Keep the display on too"), isOn: $caffeine.keepDisplayOn)
             }
-            Section(L("Milk (lid closed)")) {
-                Toggle(L("Milk: keep running with the lid closed"), isOn: $caffeine.milk)
-                if caffeine.milkActive {
-                    Label(L("Lid sleep is off. Downloads, builds and Claude keep running with the lid closed."), systemImage: "drop.fill")
+            Section(L("Espresso (lid closed)")) {
+                Toggle(L("Espresso: keep running with the lid closed"), isOn: $caffeine.espresso)
+                if caffeine.espressoActive {
+                    Label(L("Lid sleep is off. Downloads, builds and Claude keep running with the lid closed."), systemImage: "cup.and.heat.waves.fill")
                         .foregroundColor(.orange)
                 }
-                if let err = caffeine.milkError {
+                if let err = caffeine.espressoError {
                     Label(err, systemImage: "exclamationmark.triangle").foregroundColor(.secondary)
                 }
-                Stepper(L("Turn off on battery at %@", Fmt.pct(caffeine.milkMinBattery)),
-                        value: $caffeine.milkMinBattery, in: 5...50, step: 5)
-                Text(L("Turns Coffee on and runs `pmset disablesleep` so the Mac doesn't sleep when the lid closes. Asks for your password once (a sudoers rule that allows only that command). Lid sleep comes back when Coffee ends, on quit, and after a crash. Don't put the Mac in a bag while Milk is on: it can get hot."))
+                Stepper(L("Turn off on battery at %@", Fmt.pct(caffeine.espressoMinBattery)),
+                        value: $caffeine.espressoMinBattery, in: 5...50, step: 5)
+                Text(L("Turns Coffee on and runs `pmset disablesleep` so the Mac doesn't sleep when the lid closes. Asks for your password once (a sudoers rule that allows only that command). Lid sleep comes back when Coffee ends, on quit, and after a crash. Don't put the Mac in a bag while Espresso is on: it can get hot."))
                     .font(.caption).foregroundColor(.secondary)
             }
             Section(L("Claude usage")) {
