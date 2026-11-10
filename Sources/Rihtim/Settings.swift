@@ -893,7 +893,19 @@ private struct ExtrasPage: View {
                 }
                 .pickerStyle(.segmented)
                 Toggle(L("Keep the display on too"), isOn: $caffeine.keepDisplayOn)
-                Text(L("Doesn't keep the Mac awake with the lid closed (macOS only allows that with a power adapter and an external display)."))
+            }
+            Section(L("Milk (lid closed)")) {
+                Toggle(L("Milk: keep running with the lid closed"), isOn: $caffeine.milk)
+                if caffeine.milkActive {
+                    Label(L("Lid sleep is off. Downloads, builds and Claude keep running with the lid closed."), systemImage: "drop.fill")
+                        .foregroundColor(.orange)
+                }
+                if let err = caffeine.milkError {
+                    Label(err, systemImage: "exclamationmark.triangle").foregroundColor(.secondary)
+                }
+                Stepper(L("Turn off on battery at %@", Fmt.pct(caffeine.milkMinBattery)),
+                        value: $caffeine.milkMinBattery, in: 5...50, step: 5)
+                Text(L("Turns Coffee on and runs `pmset disablesleep` so the Mac doesn't sleep when the lid closes. Asks for your password once (a sudoers rule that allows only that command). Lid sleep comes back when Coffee ends, on quit, and after a crash. Don't put the Mac in a bag while Milk is on: it can get hot."))
                     .font(.caption).foregroundColor(.secondary)
             }
             Section(L("Claude usage")) {

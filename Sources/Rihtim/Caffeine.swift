@@ -1,4 +1,5 @@
 import AppKit
+import IOKit.ps
 import IOKit.pwr_mgt
 import SwiftUI
 
@@ -24,15 +25,45 @@ final class Caffeine: ObservableObject {
     private var hasAssertion = false
     private var timer: Timer?
 
+    /// Milk: Coffee that keeps going with the lid closed / display off (see `LidSleep`).
+    @Published var milk = false {
+        didSet {
+            guard milk != oldValue else { return }
+            UserDefaults.standard.set(milk, forKey: "caffeineMilk")
+            if milk { milkError = nil }
+            if milk && !isActive { activate(minutes: nil) } else { applyMilk() }
+        }
+    }
+    /// Lid sleep is really disabled right now.
+    @Published private(set) var milkActive = false
+    @Published private(set) var milkError: String?
+    /// Milk turns itself off on battery at or below this level.
+    @Published var milkMinBattery = 15 {
+        didSet { UserDefaults.standard.set(milkMinBattery, forKey: "caffeineMilkMinBattery") }
+    }
+    private var batteryTimer: Timer?
+
     init() {
-        UserDefaults.standard.register(defaults: ["caffeineDisplay": true])
-        keepDisplayOn = UserDefaults.standard.bool(forKey: "caffeineDisplay")
+        let d = UserDefaults.standard
+        d.register(defaults: ["caffeineDisplay": true, "caffeineMilkMinBattery": 15])
+        keepDisplayOn = d.bool(forKey: "caffeineDisplay")
+        milkMinBattery = d.integer(forKey: "caffeineMilkMinBattery")
+        // Set before `milk`'s didSet can matter: Coffee starts off, so nothing is applied.
+        milk = d.bool(forKey: "caffeineMilk")
+        LidSleep.cleanUpAfterCrash()
+    }
+
+    /// Called on quit: never leave lid sleep disabled behind.
+    func shutdown() {
+        if milkActive { _ = LidSleep.set(disabled: false) }
+        milkActive = false
     }
 
     func activate(minutes: Int?) {
         selectedMinutes = minutes
         assert()
         isActive = hasAssertion
+        applyMilk()
         endsAt = minutes.map { Date().addingTimeInterval(TimeInterval($0 * 60)) }
         timer?.invalidate()
         timer = nil
@@ -51,6 +82,7 @@ final class Caffeine: ObservableObject {
         release()
         isActive = false
         endsAt = nil
+        applyMilk()
     }
 
     func toggle() { isActive ? deactivate() : activate(minutes: nil) }
@@ -69,8 +101,69 @@ final class Caffeine: ObservableObject {
 
     var shortStatus: String {
         guard isActive else { return L("Off") }
-        guard let endsAt else { return L("Indefinitely") }
-        return Fmt.until(endsAt)
+        let base = endsAt.map { Fmt.until($0) } ?? L("Indefinitely")
+        return milkActive ? L("%@ + Milk", base) : base
+    }
+
+    // MARK: Milk
+
+    private func applyMilk() {
+        let want = isActive && milk
+        if want && !milkActive {
+            if let battery = Self.batteryLevel(), battery <= milkMinBattery {
+                milkError = L("Battery is at %@, Milk needs more than %@.", Fmt.pct(battery), Fmt.pct(milkMinBattery))
+                milk = false
+                return
+            }
+            if !LidSleep.isAllowed && !LidSleep.install() {
+                milkError = L("Milk needs your password once to allow `pmset disablesleep`.")
+                milk = false
+                return
+            }
+            guard LidSleep.set(disabled: true) else {
+                milkError = L("Couldn't disable lid sleep (pmset failed).")
+                milk = false
+                return
+            }
+            milkActive = true
+            milkError = nil
+            startBatteryWatch()
+            Diag.log("milk: lid sleep disabled")
+        } else if !want && milkActive {
+            _ = LidSleep.set(disabled: false)
+            milkActive = false
+            batteryTimer?.invalidate()
+            batteryTimer = nil
+            Diag.log("milk: lid sleep restored")
+        }
+    }
+
+    private func startBatteryWatch() {
+        batteryTimer?.invalidate()
+        let t = Timer(timeInterval: 60, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.milkActive, let level = Self.batteryLevel(), level <= self.milkMinBattery else { return }
+                self.milkError = L("Milk turned off: battery at %@.", Fmt.pct(level))
+                self.milk = false
+            }
+        }
+        RunLoop.main.add(t, forMode: .common)
+        batteryTimer = t
+    }
+
+    /// Internal battery percentage while running on battery; nil on AC or without a battery.
+    static func batteryLevel() -> Int? {
+        guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
+              let list = IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as? [CFTypeRef] else { return nil }
+        for ps in list {
+            guard let d = IOPSGetPowerSourceDescription(info, ps)?.takeUnretainedValue() as? [String: Any],
+                  d[kIOPSTypeKey] as? String == kIOPSInternalBatteryType,
+                  d[kIOPSPowerSourceStateKey] as? String == kIOPSBatteryPowerValue,
+                  let cur = d[kIOPSCurrentCapacityKey] as? Int, let max = d[kIOPSMaxCapacityKey] as? Int, max > 0
+            else { continue }
+            return cur * 100 / max
+        }
+        return nil
     }
 
     private func assert() {
@@ -93,6 +186,72 @@ final class Caffeine: ObservableObject {
         guard hasAssertion else { return }
         IOPMAssertionRelease(assertionID)
         hasAssertion = false
+    }
+}
+
+// MARK: - Lid sleep
+
+/// macOS always sleeps on lid close (without an external display), and assertions can't
+/// stop that. Only `pmset -a disablesleep 1` can, and it needs root. A one-time admin
+/// prompt installs a sudoers rule that allows exactly these two commands without a password.
+enum LidSleep {
+    static let sudoersPath = "/etc/sudoers.d/rihtim-milk"
+    private static let appliedKey = "caffeineMilkApplied"
+
+    /// Is `sudo -n pmset -a disablesleep 1` allowed without a password?
+    static var isAllowed: Bool {
+        run("/usr/bin/sudo", ["-n", "-l", "/usr/bin/pmset", "-a", "disablesleep", "1"]).status == 0
+    }
+
+    /// Current `SleepDisabled` value from `pmset -g`.
+    static var isDisabled: Bool {
+        let out = run("/usr/bin/pmset", ["-g"]).output
+        return out.split(separator: "\n").contains { line in
+            let parts = line.split(whereSeparator: { $0 == " " || $0 == "\t" })
+            return parts.first == "SleepDisabled" && parts.last == "1"
+        }
+    }
+
+    @discardableResult
+    static func set(disabled: Bool) -> Bool {
+        let ok = run("/usr/bin/sudo", ["-n", "/usr/bin/pmset", "-a", "disablesleep", disabled ? "1" : "0"]).status == 0
+        if ok { UserDefaults.standard.set(disabled, forKey: appliedKey) }
+        return ok
+    }
+
+    /// If Rıhtım crashed while Milk was on, lid sleep is still disabled: restore it.
+    static func cleanUpAfterCrash() {
+        guard UserDefaults.standard.bool(forKey: appliedKey) else { return }
+        if isDisabled { set(disabled: false) } else { UserDefaults.standard.set(false, forKey: appliedKey) }
+        Diag.log("milk: restored lid sleep left over from the last run")
+    }
+
+    /// Asks for the admin password once and installs the sudoers rule (checked with visudo).
+    static func install() -> Bool {
+        let user = NSUserName()
+        guard !user.isEmpty, user.allSatisfy({ $0.isLetter || $0.isNumber || "._-".contains($0) }) else { return false }
+        let rule = "\(user) ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 0, /usr/bin/pmset -a disablesleep 1"
+        let sh = "t=$(/usr/bin/mktemp) && printf '%s\\n' '\(rule)' > \"$t\" && /usr/sbin/visudo -cf \"$t\" && "
+            + "/usr/bin/install -m 0440 -o root -g wheel \"$t\" \(sudoersPath); r=$?; /bin/rm -f \"$t\"; exit $r"
+        let script = "do shell script \"\(sh.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\""))\" "
+            + "with prompt \"\(L("Rıhtım wants to allow Milk to keep the Mac awake with the lid closed."))\" with administrator privileges"
+        var err: NSDictionary?
+        NSAppleScript(source: script)?.executeAndReturnError(&err)
+        if let err { Diag.log("milk: install failed \(err)") }
+        return err == nil && isAllowed
+    }
+
+    private static func run(_ path: String, _ args: [String]) -> (status: Int32, output: String) {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: path)
+        p.arguments = args
+        let pipe = Pipe()
+        p.standardOutput = pipe
+        p.standardError = FileHandle.nullDevice
+        do { try p.run() } catch { return (-1, "") }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        p.waitUntilExit()
+        return (p.terminationStatus, String(decoding: data, as: UTF8.self))
     }
 }
 
@@ -145,6 +304,7 @@ struct CaffeineMenuItems: View {
         }
         Divider()
         Button((caffeine.keepDisplayOn ? "✓ " : "") + L("Keep the display on too")) { caffeine.keepDisplayOn.toggle() }
+        Button((caffeine.milk ? "✓ " : "") + L("Milk: keep running with the lid closed")) { caffeine.milk.toggle() }
         if caffeine.isActive { Button(L("Turn off")) { caffeine.deactivate() } }
     }
 }
@@ -173,6 +333,8 @@ struct CaffeineChooser: View {
                 }
             }
             Chip(title: L("Display"), symbol: "display", on: caffeine.keepDisplayOn) { caffeine.keepDisplayOn.toggle() }
+            Chip(title: L("Milk"), symbol: "drop.fill", on: caffeine.milk) { caffeine.milk.toggle() }
+                .help(L("Milk: keep running with the lid closed"))
         }
     }
 }

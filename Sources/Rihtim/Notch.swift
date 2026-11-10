@@ -874,6 +874,16 @@ final class NotchController {
             }
             .store(in: &subs)
 
+        caffeine.$milkActive
+            .removeDuplicates()
+            .dropFirst()
+            .sink { [weak self] on in
+                self?.flash(NotchBanner(symbol: "drop.fill",
+                                        text: on ? L("Milk on: keeps running with the lid closed") : L("Milk off"),
+                                        color: on ? .orange : .secondary), seconds: 2.5)
+            }
+            .store(in: &subs)
+
         // Let the user know when a Claude session finishes its reply or asks for permission.
         var lastStates: [String: ClaudeSession.State] = [:]
         var primed = false

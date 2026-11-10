@@ -258,6 +258,7 @@ final class PreviewController {
         place(size: size, screen: screen.frame)
         if !panel.isVisible { onShow?() }
         panel.orderFrontRegardless()
+        DockReveal.shared.hold("preview")
         startTracking()
         if !listMode { loadThumbnails(gen) }
     }
@@ -339,6 +340,7 @@ final class PreviewController {
         panel.orderOut(nil)
         currentPID = nil
         stopTracking()
+        DockReveal.shared.release("preview")
     }
 
     // MARK: actions

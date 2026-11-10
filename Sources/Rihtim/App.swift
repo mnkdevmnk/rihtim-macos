@@ -72,6 +72,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         previews.onShow = { [weak self] in self?.folders.hide() }
         folders.onShow = { [weak self] in self?.previews.hide() }
         gestures.onAction = { [weak self] in self?.previews.hide() }
+        DockReveal.shared.onDockHidden = { [weak self] in self?.previews.hide(); self?.folders.hide() }
 
         applyPrefs()
         prefsToken = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification,
@@ -112,6 +113,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         SymbolicHotKeys.setCommandTabEnabled(true)
         brightness?.shutdown()
+        caffeine?.shutdown()
     }
 
     /// Pushes everything from UserDefaults into the components; only assigns what changed.
@@ -266,6 +268,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         sleepMenu.addItem(.separator())
         sleepMenu.addItem(toggle(L("Keep the display on too"), caffeine.keepDisplayOn, #selector(caffeineDisplay)))
+        sleepMenu.addItem(toggle(L("Milk: keep running with the lid closed"), caffeine.milk, #selector(caffeineMilk)))
         sleepItem.submenu = sleepMenu
         menu.addItem(sleepItem)
 
@@ -352,6 +355,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func caffeineDisplay() { caffeine.keepDisplayOn.toggle() }
+    @objc private func caffeineMilk() { caffeine.milk.toggle() }
     @objc private func refreshUsage() { usage.refresh() }
     @objc private func toggleBrightness() { brightness.toggle() }
     @objc private func openSettings() { settingsWindow.show() }

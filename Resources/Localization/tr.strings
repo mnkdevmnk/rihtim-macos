@@ -488,7 +488,6 @@
 "Alert" = "Uyarı";
 "Notify when a battery runs low" = "Pil azalınca bildirim gönder";
 "Duration" = "Süre";
-"Doesn't keep the Mac awake with the lid closed (macOS only allows that with a power adapter and an external display)." = "Kapak kapalıyken uyumayı engellemez (macOS buna sadece güç adaptörü ve harici ekranla izin verir).";
 "Uses Claude Code's login from the Keychain. Rıhtım never renews it; if it expires, just run `claude` once in a terminal." = "Claude Code'un Keychain'deki oturumu kullanılır. Rıhtım oturumu yenilemez; süresi dolarsa terminalde `claude`'u bir kez açman yeterli.";
 "Preview" = "Önizleme";
 "Cards on the Home tab" = "Ana sekmedeki kartlar";
@@ -540,3 +539,19 @@
 "Coffee on: %@" = "Kahve açık: %@";
 "Left side when closed" = "Kapalıyken solda";
 "Right side when closed" = "Kapalıyken sağda";
+
+/* Milk */
+"%@ + Milk" = "%@ + Süt";
+"Battery is at %@, Milk needs more than %@." = "Pil %@, Süt için %@ üstü gerekli.";
+"Milk needs your password once to allow `pmset disablesleep`." = "Süt, `pmset disablesleep` izni için bir kez şifreni istiyor.";
+"Couldn't disable lid sleep (pmset failed)." = "Kapak uykusu kapatılamadı (pmset başarısız).";
+"Milk turned off: battery at %@." = "Süt kapandı: pil %@.";
+"Rıhtım wants to allow Milk to keep the Mac awake with the lid closed." = "Rıhtım, Süt'ün kapak kapalıyken Mac'i uyanık tutmasına izin vermek istiyor.";
+"Milk: keep running with the lid closed" = "Süt: kapak kapalıyken de çalışsın";
+"Milk" = "Süt";
+"Milk (lid closed)" = "Süt (kapak kapalı)";
+"Lid sleep is off. Downloads, builds and Claude keep running with the lid closed." = "Kapak uykusu kapalı. İndirmeler, derlemeler ve Claude kapak kapalıyken de sürer.";
+"Turn off on battery at %@" = "Pilde %@ olunca kapat";
+"Turns Coffee on and runs `pmset disablesleep` so the Mac doesn't sleep when the lid closes. Asks for your password once (a sudoers rule that allows only that command). Lid sleep comes back when Coffee ends, on quit, and after a crash. Don't put the Mac in a bag while Milk is on: it can get hot." = "Kahve'yi açar ve `pmset disablesleep` çalıştırır, böylece kapak kapanınca Mac uyumaz. Bir kez şifre ister (sadece o komuta izin veren bir sudoers kuralı). Kahve bitince, çıkışta ve çökme sonrası kapak uykusu geri gelir. Süt açıkken Mac'i çantaya koyma, ısınabilir.";
+"Milk on: keeps running with the lid closed" = "Süt açık: kapak kapalıyken de çalışır";
+"Milk off" = "Süt kapalı";

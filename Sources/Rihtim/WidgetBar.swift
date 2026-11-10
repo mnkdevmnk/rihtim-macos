@@ -345,6 +345,7 @@ final class WidgetBarController {
     }
 
     private func hideAll() {
+        DockReveal.shared.release("bar")
         for p in panels.values where p.isVisible { p.orderOut(nil) }
         closePopover()
     }
@@ -379,6 +380,13 @@ final class WidgetBarController {
         if settings.height != h { settings.height = h }
 
         var y = glassMidY - h / 2 + st.offsetY
+        // Keep an auto-hiding Dock up while the pointer is on the strip or its popover is open.
+        let overBar = panels.values.contains { $0.isVisible && $0.frame.insetBy(dx: -6, dy: -6).contains(mouse) }
+        if autohide && reveal > 0.5 && (overBar || openKind != nil) {
+            DockReveal.shared.hold("bar")
+        } else {
+            DockReveal.shared.release("bar")
+        }
         if autohide {
             // If the AX position moves while the Dock slides, just follow it (best sync).
             if let last = lastAXMinY, abs(last - dockFrame.minY) > 0.5, !axTracks {
@@ -391,10 +399,9 @@ final class WidgetBarController {
             } else {
                 // Otherwise mimic the Dock: slide up when the pointer rests on the bottom
                 // edge, slide down once it leaves the Dock area.
-                let overBar = panels.values.contains { $0.isVisible && $0.frame.insetBy(dx: -6, dy: -6).contains(mouse) }
                 let onScreenX = mouse.x >= screen.minX && mouse.x <= screen.maxX
                 var want = false
-                if openKind != nil || overBar {
+                if openKind != nil || overBar || DockReveal.shared.isHeld {
                     want = true
                 } else if reveal > 0.01 {
                     want = onScreenX && mouse.y <= screen.minY + h + 18
@@ -486,7 +493,7 @@ final class WidgetBarController {
             size = CGSize(width: 460, height: 190)
             root = AnyView(WeatherPopover(weather: weather))
         case .caffeine:
-            size = CGSize(width: 470, height: 52)
+            size = CGSize(width: 540, height: 52)
             root = AnyView(CaffeineChooser(caffeine: caffeine)
                 .padding(12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

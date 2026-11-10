@@ -111,6 +111,7 @@ final class FolderPopController {
         place(size: size, screen: screen.frame)
         if !panel.isVisible { onShow?() }
         panel.orderFrontRegardless()
+        DockReveal.shared.hold("folder")
         startTracking()
     }
 
@@ -201,6 +202,7 @@ final class FolderPopController {
         panel.orderOut(nil)
         currentURL = nil
         stopTracking()
+        DockReveal.shared.release("folder")
     }
 
     // MARK: actions
