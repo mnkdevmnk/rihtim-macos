@@ -514,6 +514,17 @@ struct TachometerShape: View {
     let fraction: Double
     var lineWidth: CGFloat = 2.5
 
+    private static let colors: [Color] = [.green, .yellow, .red]
+
+    private func segment(_ i: Int, center: CGPoint, radius: CGFloat) -> some View {
+        let start = 180 + Double(i) * 60 + 2
+        let end = 180 + Double(i + 1) * 60 - 2
+        return Path { p in
+            p.addArc(center: center, radius: radius, startAngle: .degrees(start), endAngle: .degrees(end), clockwise: false)
+        }
+        .stroke(Self.colors[i], style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+    }
+
     var body: some View {
         GeometryReader { g in
             let w = g.size.width, h = g.size.height
@@ -521,11 +532,7 @@ struct TachometerShape: View {
             let c = CGPoint(x: w / 2, y: h - lineWidth / 2)
             ZStack {
                 ForEach(0..<3) { i in
-                    Path { p in
-                        p.addArc(center: c, radius: r, startAngle: .degrees(180 + Double(i) * 60 + 2),
-                                 endAngle: .degrees(180 + Double(i + 1) * 60 - 2), clockwise: false)
-                    }
-                    .stroke([Color.green, .yellow, .red][i], style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                    segment(i, center: c, radius: r)
                 }
                 Path { p in
                     let a = Angle.degrees(180 + 180 * min(max(fraction, 0), 1)).radians
