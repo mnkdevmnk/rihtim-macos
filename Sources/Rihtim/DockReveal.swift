@@ -14,12 +14,15 @@ final class DockReveal {
     private var tap: CFMachPort?
     private var source: CFRunLoopSource?
     private var dockPID: pid_t = 0
-    private var revealPoint: CGPoint = .zero
+    fileprivate var revealPoint: CGPoint = .zero
     private var dockRegion: CGRect = .zero
-    private var list: AXUIElement?
+    fileprivate var list: AXUIElement?
     private var shownMinY: CGFloat = 0
     private var keepAlive: Timer?
     private var exitCount = 0
+    private var droppedMoves = 0
+    /// Tags our own synthetic events so the tap lets them through.
+    static let marker: Int64 = 0x5249_4854
 
     /// Called when the Dock slides away anyway; our panels close so nothing floats alone.
     var onDockHidden: (@MainActor () -> Void)?
@@ -45,9 +48,9 @@ final class DockReveal {
     }
 
     /// Mouse position in global CG (top-left) coordinates.
-    private static var mouseCG: CGPoint { CGEvent(source: nil)?.location ?? .zero }
+    fileprivate static var mouseCG: CGPoint { CGEvent(source: nil)?.location ?? .zero }
 
-    private func computeTarget() -> Bool {
+    fileprivate func computeTarget() -> Bool {
         guard let dock = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dock").first else { return false }
         let ax = AXUIElementCreateApplication(dock.processIdentifier)
         guard let list = AX.elements(ax, kAXChildrenAttribute)?.first(where: { AX.string($0, kAXRoleAttribute) == kAXListRole }),
@@ -56,7 +59,7 @@ final class DockReveal {
         shownMinY = f.minY
         let ph = Geometry.primaryHeight
         let screens = NSScreen.screens.map { CGRect(x: $0.frame.minX, y: ph - $0.frame.maxY, width: $0.frame.width, height: $0.frame.height) }
-        guard let s = screens.first(where: { $0.intersects(f) || $0.contains(CGPoint(x: f.midX, y: f.midY)) }) else { return false }
+        guard let s = screens.first(where: { $0.insetBy(dx: -2, dy: -2).intersects(f) || ($0.minX...$0.maxX).contains(f.midX) }) else { return false }
         dockPID = dock.processIdentifier
 
         let distBottom = s.maxY - f.maxY, distLeft = f.minX - s.minX, distRight = s.maxX - f.maxX
@@ -81,13 +84,16 @@ final class DockReveal {
             Diag.log("dock reveal: not possible (post access=\(CGPreflightPostEventAccess()))")
             return
         }
-        let mask = CGEventMask(1) << CGEventMask(Self.mouseExited.rawValue)
+        // Active tap on the Dock process: while held, the Dock never hears that the real
+        // pointer left (exited / moves outside its area are dropped), so it stays up.
+        let types: [CGEventType] = [Self.mouseExited, .mouseMoved, .leftMouseDragged]
+        let mask = types.reduce(CGEventMask(0)) { $0 | (CGEventMask(1) << CGEventMask($1.rawValue)) }
         guard let tap = CGEvent.tapCreateForPid(
-            pid: dockPID, place: .tailAppendEventTap, options: .listenOnly,
+            pid: dockPID, place: .headInsertEventTap, options: .defaultTap,
             eventsOfInterest: mask,
             callback: { _, type, event, _ in
-                MainActor.assumeIsolated { DockReveal.shared.handle(type) }
-                return Unmanaged.passUnretained(event)
+                let drop = MainActor.assumeIsolated { DockReveal.shared.handle(type, event) }
+                return drop ? nil : Unmanaged.passUnretained(event)
             },
             userInfo: nil) else {
             Diag.log("dock reveal: couldn't create tap")
@@ -101,6 +107,7 @@ final class DockReveal {
         // The pointer may already have left the Dock on its way to our panel.
         if !dockRegion.contains(Self.mouseCG) { post(.mouseMoved, at: revealPoint) }
         exitCount = 0
+        droppedMoves = 0
         Diag.log("dock reveal: hold (pid=\(dockPID) point=\(revealPoint) region=\(dockRegion))")
         keepAlive = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
             MainActor.assumeIsolated { DockReveal.shared.tick() }
@@ -112,7 +119,7 @@ final class DockReveal {
         guard tap != nil else { return }
         if !dockRegion.contains(Self.mouseCG) { post(.mouseMoved, at: revealPoint) }
         if let list, let f = AX.frame(list), f.minY > shownMinY + 6 {
-            Diag.log("dock reveal: Dock hid anyway (minY \(shownMinY) -> \(f.minY), exits seen=\(exitCount)); closing panels")
+            Diag.log("dock reveal: Dock hid anyway (minY \(shownMinY) -> \(f.minY), exits=\(exitCount), dropped=\(droppedMoves)); closing panels")
             holders.removeAll()
             uninstall()
             onDockHidden?()
@@ -130,24 +137,84 @@ final class DockReveal {
         // Let the Dock hide normally now that nothing holds it.
         let m = Self.mouseCG
         if !dockRegion.contains(m) { post(Self.mouseExited, at: m) }
-        Diag.log("dock reveal: release (exits seen=\(exitCount))")
+        Diag.log("dock reveal: release (exits seen=\(exitCount), moves dropped=\(droppedMoves))")
     }
 
-    fileprivate func handle(_ type: CGEventType) {
+    /// true = drop the event before the Dock sees it.
+    fileprivate func handle(_ type: CGEventType, _ event: CGEvent) -> Bool {
         switch type {
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
             if let tap { CGEvent.tapEnable(tap: tap, enable: true) }
-        case Self.mouseExited:
-            exitCount += 1
-            post(.mouseMoved, at: revealPoint)
+            return false
         default: break
         }
+        guard tap != nil, event.getIntegerValueField(.eventSourceUserData) != Self.marker else { return false }
+        if type == Self.mouseExited {
+            exitCount += 1
+            post(.mouseMoved, at: revealPoint)
+            return true
+        }
+        // real pointer moves outside the Dock: hide them from the Dock
+        if !dockRegion.contains(event.location) {
+            droppedMoves += 1
+            return true
+        }
+        return false
     }
 
-    private func post(_ type: CGEventType, at p: CGPoint) {
+    fileprivate func post(_ type: CGEventType, at p: CGPoint) {
         guard dockPID != 0,
               let e = CGEvent(mouseEventSource: nil, mouseType: .mouseMoved, mouseCursorPosition: p, mouseButton: .left) else { return }
         e.type = type
+        e.setIntegerValueField(.eventSourceUserData, value: Self.marker)
         e.postToPid(dockPID)
     }
 }
+
+#if DEBUG
+// MARK: - experiment (debug only): which synthetic event keeps / brings the Dock up?
+// Trigger: post the distributed notification "dev.minik.rihtim.revealTest".
+extension DockReveal {
+    func installTestHook() {
+        DistributedNotificationCenter.default().addObserver(forName: Notification.Name("dev.minik.rihtim.revealTest"), object: nil, queue: .main) { _ in
+            Task { @MainActor in await DockReveal.shared.runTest() }
+        }
+    }
+
+    private func dockMinY() -> CGFloat {
+        guard let list, let f = AX.frame(list) else { return -1 }
+        return f.minY
+    }
+
+    private func runTest() async {
+        guard computeTarget(), let list, let f = AX.frame(list) else { Diag.log("revealTest: no dock"); return }
+        let s = NSScreen.screens.first!.frame
+        let bottom = s.height - 1
+        let midX = f.midX
+        let cases: [(String, CGEventType, CGPoint)] = [
+            ("moved edge-left", .mouseMoved, CGPoint(x: revealPoint.x, y: bottom)),
+            ("moved edge-under-dock", .mouseMoved, CGPoint(x: midX, y: bottom)),
+            ("moved inside-dock", .mouseMoved, CGPoint(x: midX, y: bottom - 30)),
+            ("entered edge-under-dock", Self.mouseEnteredType, CGPoint(x: midX, y: bottom)),
+        ]
+        Diag.log("revealTest: start mouse=\(Self.mouseCG) dockMinY=\(f.minY) screenH=\(s.height)")
+        for (name, type, p) in cases {
+            // let it hide first
+            post(Self.mouseExited, at: Self.mouseCG)
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            let before = dockMinY()
+            var samples: [Int] = []
+            for _ in 0..<20 {
+                post(type, at: p)
+                try? await Task.sleep(nanoseconds: 100_000_000)
+                samples.append(Int(dockMinY()))
+            }
+            Diag.log("revealTest: \(name) at \(p): before=\(Int(before)) samples=\(samples)")
+        }
+        post(Self.mouseExited, at: Self.mouseCG)
+        Diag.log("revealTest: done")
+    }
+
+    static let mouseEnteredType = CGEventType(rawValue: UInt32(NSEvent.EventType.mouseEntered.rawValue))!
+}
+#endif

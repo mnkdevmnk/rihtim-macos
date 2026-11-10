@@ -228,6 +228,7 @@ final class WidgetBarController {
     private var reveal: CGFloat = 1
     private var axTracks = false
     private var lastAXMinY: CGFloat?
+    private var dockMoving = Date.distantPast
     private var edgeSince: Date?
     private var lastTick = Date()
     private var rate: TimeInterval = 0.4
@@ -389,6 +390,7 @@ final class WidgetBarController {
         }
         if autohide {
             // If the AX position moves while the Dock slides, just follow it (best sync).
+            if let last = lastAXMinY, abs(last - dockFrame.minY) > 0.5 { dockMoving = now }
             if let last = lastAXMinY, abs(last - dockFrame.minY) > 0.5, !axTracks {
                 axTracks = true
                 Diag.log("dock AX position moves while sliding -> follow mode")
@@ -423,7 +425,10 @@ final class WidgetBarController {
         }
 
         let near = mouse.y < screen.minY + h + 90
-        setRate(autohide && (near || (reveal > 0 && reveal < 1)) ? 1.0 / 60 : 0.4)
+        // Fast while the Dock slides (even with the pointer far away, e.g. on a preview) so the
+        // strip moves with it; a slower watch otherwise catches the start of a slide quickly.
+        let sliding = now.timeIntervalSince(dockMoving) < 0.5
+        setRate(autohide ? (near || sliding || (reveal > 0 && reveal < 1) ? 1.0 / 60 : 0.1) : 0.4)
 
         if reveal <= 0.001 {
             for p in panels.values where p.isVisible { p.orderOut(nil) }

@@ -72,6 +72,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         previews.onShow = { [weak self] in self?.folders.hide() }
         folders.onShow = { [weak self] in self?.previews.hide() }
         gestures.onAction = { [weak self] in self?.previews.hide() }
+        #if DEBUG
+        DockReveal.shared.installTestHook()
+        #endif
         DockReveal.shared.onDockHidden = { [weak self] in self?.previews.hide(); self?.folders.hide() }
 
         applyPrefs()
