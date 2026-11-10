@@ -14,9 +14,53 @@ struct DockHoverItem {
     let frameAX: CGRect
 }
 
+/// Keeps a panel above a bottom Dock while the auto-hidden Dock slides in. The hovered
+/// icon's frame is read mid-slide, so without this the panel lands on top of the icons.
+@MainActor
+final class DockSlideFollower {
+    private var lastMinY: CGFloat?
+    private var timer: Timer?
+    private var onShift: ((CGFloat) -> Void)?
+
+    /// Follows at 60 Hz for a second after showing; `check()` from the panel's poll covers the rest.
+    func start(_ onShift: @escaping (CGFloat) -> Void) {
+        self.onShift = onShift
+        lastMinY = DockObserver.shared?.dockFrameAX()?.minY
+        timer?.invalidate()
+        var ticks = 0
+        let t = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self] t in
+            MainActor.assumeIsolated {
+                ticks += 1
+                self?.check()
+                if ticks >= 60 { t.invalidate() }
+            }
+        }
+        RunLoop.main.add(t, forMode: .common)
+        timer = t
+    }
+
+    func stop() {
+        timer?.invalidate()
+        timer = nil
+        lastMinY = nil
+        onShift = nil
+    }
+
+    /// Calls back with the AX y delta (positive = Dock moved down) when the Dock moved.
+    func check() {
+        guard let last = lastMinY, let now = DockObserver.shared?.dockFrameAX()?.minY, abs(now - last) > 0.5 else { return }
+        lastMinY = now
+        onShift?(now - last)
+    }
+}
+
 /// Watches the real Dock through AX. Never hides it, restarts it or writes its prefs.
 @MainActor
 final class DockObserver {
+    /// The app's single observer, for panels that need the Dock's live frame.
+    private(set) static weak var shared: DockObserver?
+    init() { Self.shared = self }
+
     var onHover: (@MainActor (DockHoverItem?) -> Void)?
     /// Dock item currently under the pointer (AX selection). The gesture tap reads this.
     private(set) var current: DockHoverItem?
@@ -82,6 +126,21 @@ final class DockObserver {
     func dockFrameAX() -> CGRect? {
         guard let dockList else { return nil }
         return AX.frame(dockList)
+    }
+
+    /// `frame` was read when the pointer reached the icon, often while an auto-hidden Dock
+    /// was still offscreen or sliding. Moves it to where the Dock's icon row is now.
+    func liveFrame(_ frame: CGRect) -> CGRect {
+        guard let list = dockFrameAX(), list.width > 0, list.height > 0 else { return frame }
+        var f = frame
+        if list.width >= list.height {   // bottom Dock: icons share the list's row
+            f.origin.y = list.minY
+            f.size.height = list.height
+        } else {                         // left / right Dock
+            f.origin.x = list.minX
+            f.size.width = list.width
+        }
+        return f
     }
 
     /// Union of the item frames: the actual row of icons inside the Dock glass.
@@ -174,6 +233,7 @@ final class PreviewController {
     private var pollTimer: Timer?
     private var pollTicks = 0
     private var mouseMonitor: Any?
+    private let follower = DockSlideFollower()
 
     init(music: MusicController) {
         self.music = music
@@ -218,8 +278,8 @@ final class PreviewController {
 
         generation += 1
         let gen = generation
-        anchorAX = newAnchor
-        anchor = Geometry.cocoa(fromAX: newAnchor)
+        anchorAX = DockObserver.shared?.liveFrame(newAnchor) ?? newAnchor
+        anchor = Geometry.cocoa(fromAX: anchorAX)
         let screen = Geometry.screen(containing: CGPoint(x: anchor.midX, y: anchor.midY))
         orientation = DockOrientation.detect(anchor: anchor, screen: screen.frame)
 
@@ -259,6 +319,7 @@ final class PreviewController {
         if !panel.isVisible { onShow?() }
         panel.orderFrontRegardless()
         DockReveal.shared.hold("preview")
+        if orientation == .bottom { follower.start { [weak self] dy in self?.dockMoved(dy) } } else { follower.stop() }
         startTracking()
         if !listMode { loadThumbnails(gen) }
     }
@@ -320,8 +381,17 @@ final class PreviewController {
         }
     }
 
+    /// AX y grows downward, Cocoa y upward.
+    private func dockMoved(_ dy: CGFloat) {
+        guard panel.isVisible else { return }
+        anchorAX.origin.y += dy
+        anchor.origin.y -= dy
+        panel.setFrameOrigin(NSPoint(x: panel.frame.minX, y: panel.frame.minY - dy))
+    }
+
     private func poll() {
         guard panel.isVisible else { stopTracking(); return }
+        follower.check()
 
         pollTicks += 1
         if pollTicks % 15 == 0 { loadThumbnails(generation) }   // live refresh every ~1.5 s
@@ -340,6 +410,7 @@ final class PreviewController {
         panel.orderOut(nil)
         currentPID = nil
         stopTracking()
+        follower.stop()
         DockReveal.shared.release("preview")
     }
 

@@ -59,6 +59,7 @@ final class FolderPopController {
     private var pendingTimer: Timer?
     private var pollTimer: Timer?
     private var mouseMonitor: Any?
+    private let follower = DockSlideFollower()
 
     init() {
         let view = FolderView(model: model,
@@ -101,7 +102,7 @@ final class FolderPopController {
         }
         currentURL = url
 
-        anchor = Geometry.cocoa(fromAX: anchorAX)
+        anchor = Geometry.cocoa(fromAX: DockObserver.shared?.liveFrame(anchorAX) ?? anchorAX)
         let screen = Geometry.screen(containing: CGPoint(x: anchor.midX, y: anchor.midY))
         orientation = DockOrientation.detect(anchor: anchor, screen: screen.frame)
         let rows = CGFloat(max(1, min(model.entries.count, FolderLayout.maxRows)))
@@ -112,6 +113,13 @@ final class FolderPopController {
         if !panel.isVisible { onShow?() }
         panel.orderFrontRegardless()
         DockReveal.shared.hold("folder")
+        if orientation == .bottom {
+            follower.start { [weak self] dy in
+                guard let self, self.panel.isVisible else { return }
+                self.anchor.origin.y -= dy   // AX y grows downward, Cocoa y upward
+                self.panel.setFrameOrigin(NSPoint(x: self.panel.frame.minX, y: self.panel.frame.minY - dy))
+            }
+        } else { follower.stop() }
         startTracking()
     }
 
@@ -182,6 +190,7 @@ final class FolderPopController {
 
     private func poll() {
         guard panel.isVisible else { stopTracking(); return }
+        follower.check()
         // Stay open while a file is being dragged out to another app.
         if NSEvent.pressedMouseButtons & 1 != 0 { return }
         let m = NSEvent.mouseLocation
@@ -202,6 +211,7 @@ final class FolderPopController {
         panel.orderOut(nil)
         currentURL = nil
         stopTracking()
+        follower.stop()
         DockReveal.shared.release("folder")
     }
 
