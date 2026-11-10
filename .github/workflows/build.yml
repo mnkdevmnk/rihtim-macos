@@ -1,0 +1,30 @@
+name: Build Rihtim.app
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift version
+        run: swift --version
+      - name: Build and package
+        run: ./build.sh
+      - name: Upload the DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rihtim
+          path: build/Rihtim.dmg
+      - name: Attach to the release for version tags
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/Rihtim.dmg

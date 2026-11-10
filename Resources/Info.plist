@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key><string>en</string>
+	<key>CFBundleLocalizations</key><array><string>en</string><string>tr</string><string>de</string></array>
+	<key>CFBundleExecutable</key><string>Rihtim</string>
+	<key>CFBundleIdentifier</key><string>dev.minik.rihtim</string>
+	<key>CFBundleName</key><string>Rıhtım</string>
+	<key>CFBundleDisplayName</key><string>Rıhtım</string>
+	<key>CFBundlePackageType</key><string>APPL</string>
+	<key>CFBundleShortVersionString</key><string>0.13.0</string>
+	<key>CFBundleVersion</key><string>21</string>
+	<key>LSMinimumSystemVersion</key><string>14.0</string>
+	<key>LSUIElement</key><true/>
+	<key>NSHighResolutionCapable</key><true/>
+	<key>CFBundleIconFile</key><string>AppIcon</string>
+	<key>NSCalendarsFullAccessUsageDescription</key><string>Rıhtım reads your calendar to show the next event and today's schedule in the calendar widget next to the Dock.</string>
+	<key>NSCalendarsUsageDescription</key><string>Rıhtım reads your calendar to show your events in the calendar widget.</string>
+	<key>NSCameraUsageDescription</key><string>Rıhtım uses the camera as a mirror in the notch's Mirror tab. Nothing is recorded.</string>
+	<key>NSAppleEventsUsageDescription</key><string>Rıhtım talks to Apple Music and Spotify to show the current track and control playback.</string>
+</dict>
+</plist>

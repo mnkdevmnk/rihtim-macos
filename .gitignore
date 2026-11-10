@@ -1,0 +1,8 @@
+.build/
+build/
+.DS_Store
+.swiftpm/
+
+# local notes for AI tooling
+CLAUDE.md
+.claude/

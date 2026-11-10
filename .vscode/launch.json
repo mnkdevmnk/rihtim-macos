@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:rihtim}",
+            "name": "Debug Rihtim",
+            "target": "Rihtim",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug Rihtim"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:rihtim}",
+            "name": "Release Rihtim",
+            "target": "Rihtim",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release Rihtim"
+        }
+    ]
+}
