@@ -4,20 +4,24 @@
 
 ## Kurulum
 
+### İndir (en kolayı)
+1. [Son sürümden](https://github.com/mnkdevmnk/rihtim-macos/releases/latest) **Rihtim.dmg**'yi indir.
+2. Aç ve **Rihtim**'i **Uygulamalar** klasörüne sürükle.
+3. Uygulama Apple onaylı (notarize) değil, o yüzden macOS ilk açılışı engeller. Terminal'i aç ve şunu çalıştır:
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/Rihtim.app
+   ```
+   Ya da: bir kez açmayı dene, sonra Sistem Ayarları › Gizlilik ve Güvenlik'te **Yine de Aç**'a tıkla.
+4. Rıhtım'ı aç ve istediği izinleri ver (aşağıda **İzinler**).
+
+macOS 14 ve üstünde, Apple Silicon ve Intel Mac'lerde çalışır. Liquid Glass için macOS 26 gerekir; eski sürümlerde buzlu cam görünümü olur.
+
 ### Kendi Mac'inde derle
 Gereken: macOS 14+, Xcode.
 ```bash
 git clone https://github.com/mnkdevmnk/rihtim-macos.git
 cd rihtim-macos
 ./build.sh install      # Rihtim.app derler, Rihtim.dmg'yi masaüstüne koyar, /Applications'a kurar
-```
-
-### Hazır .app (GitHub Actions)
-`main`'e her push'ta macOS makinesinde derlenir. Actions sekmesindeki çalışmanın altında **Rihtim** adıyla (içinde `Rihtim.dmg`) indirilir. `v0.13.0` gibi bir etiket atılırsa Releases'e de eklenir.
-
-İnternetten indirilen ve ad-hoc imzalı olduğu için ilk açılışta macOS engeller:
-```bash
-xattr -dr com.apple.quarantine /Applications/Rihtim.app
 ```
 
 ## Hakkında
@@ -37,7 +41,8 @@ Rıhtım gerçek Dock'u gizlemez, kopyasını çizmez, `killall Dock` yapmaz ve 
 | **Cihaz pilleri** | Mac, AirPods (sol / sağ / kutu), Magic Mouse, Keyboard, Trackpad. Şarj olanda ⚡ görünür. Gizle / başa sabitle, düşük pil bildirimi. |
 | **Takvim** | Apple Takvim (EventKit): sıradaki etkinlik ve geri sayım, bugünün programı, istersen toplantı başlayınca Zoom/Meet/Teams bağlantısını açar. |
 | **Hava durumu** | Open-Meteo: sıcaklık, hissedilen, 12 saatlik tahmin, nem, rüzgâr, UV, gün doğumu/batımı. Şehir ayarlardan. |
-| **Uyku engelleme** | `caffeinate` gibi: süresiz / 30 dk / 1-2-4 sa, ekran da açık kalsın seçeneği. |
+| **Kahve** | `caffeinate` gibi uyku engelleme: süresiz / 30 dk / 1-2-4 sa, ekran da açık kalsın seçeneği. |
+| **Espresso** | Kapak kapalıyken de devam eden Kahve: Mac kapalıyken indirmeler ve derlemeler biter. Bir kez şifre ister; Kahve bitince, çıkışta, çökme sonrası ve pil azalınca normal kapak uykusu geri gelir. |
 | **Claude kullanımı** | Claude aboneliğinin 5 saatlik ve haftalık limit doluluğu. |
 | **Notch adası** | Notch'un iki yanında mini bilgi; fareyle açılınca müzik, sistem, Claude, uyku, hava ve piller. |
 | **Menü çubuğu modülleri** | Stats gibi: CPU, GPU, RAM, disk, ağ, pil, dünya saatleri. Grafik / ikon / değer görünümleri; tıklayınca ayrıntı (en çok kaynak kullanan süreçler, bellek baskısı, swap, disk okuma/yazma, IP, pil sağlığı/döngü/sıcaklık/watt). |

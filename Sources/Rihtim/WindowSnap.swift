@@ -688,7 +688,7 @@ final class WindowSnapper {
         }
         synthesizing = true
         mouse(.leftMouseDown, grab)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) { [weak self] in
             mouse(.leftMouseDragged, CGPoint(x: grab.x + 1, y: grab.y))
             SymbolicHotKeys.post(right ? SymbolicHotKeys.spaceRight : SymbolicHotKeys.spaceLeft)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in

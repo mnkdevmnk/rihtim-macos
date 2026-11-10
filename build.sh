@@ -10,9 +10,10 @@ BUNDLE_ID="dev.minik.rihtim"
 OUT="build/app.noindex/$APP.app"
 DMG="build/$APP.dmg"
 
-echo "▸ Building (release, arm64)…"
-swift build -c release --arch arm64
-BIN_DIR="$(swift build -c release --arch arm64 --show-bin-path)"
+# Universal binary so it runs on Apple silicon and Intel Macs.
+echo "▸ Building (release, universal: arm64 + x86_64)…"
+swift build -c release --arch arm64 --arch x86_64
+BIN_DIR="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)"
 
 echo "▸ Assembling the .app bundle…"
 LSREG=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister

@@ -4,20 +4,24 @@
 
 ## Install
 
+### Download (easiest)
+1. Download **Rihtim.dmg** from the [latest release](https://github.com/mnkdevmnk/rihtim-macos/releases/latest).
+2. Open it and drag **Rihtim** into **Applications**.
+3. The app isn't notarized by Apple, so macOS blocks the first launch. Open Terminal and run:
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/Rihtim.app
+   ```
+   Or: try to open it once, then go to System Settings › Privacy & Security and click **Open Anyway**.
+4. Open Rıhtım and grant the permissions it asks for (see [Permissions](#permissions)).
+
+Runs on macOS 14 or later, on Apple silicon and Intel Macs. Liquid Glass needs macOS 26; older versions get a frosted look.
+
 ### Build it yourself
 Requires macOS 14+ and Xcode (or the Command Line Tools with Swift 5.9+).
 ```bash
 git clone https://github.com/mnkdevmnk/rihtim-macos.git
 cd rihtim-macos
 ./build.sh install      # builds Rihtim.app, puts Rihtim.dmg on the Desktop and installs to /Applications
-```
-
-### Prebuilt DMG
-Every push to `main` is built on GitHub Actions; the DMG is attached to the run as **Rihtim**. Version tags (`v0.13.0`) also publish it under Releases.
-
-The build is ad-hoc signed, so macOS blocks it on first launch. After copying it to Applications:
-```bash
-xattr -dr com.apple.quarantine /Applications/Rihtim.app
 ```
 
 ## About
@@ -43,6 +47,7 @@ Rıhtım never hides the Dock, never draws a copy of it, never runs `killall Doc
 | **Extra brightness** | Goes past 100% brightness on EDR-capable displays (⌘ + brightness up), never beyond the headroom the display reports. Panic switch: ⌃⌥⌘B or Esc three times. |
 | **Menu bar modules** | Stats-style CPU, GPU, RAM, disk, sensors, network, battery, Bluetooth and world clocks, each with its own widgets (charts, gauges, text…), popups and threshold notifications. |
 | **Coffee** | Keep-awake like `caffeinate`: indefinitely / 30 min / 1-2-4 h, optionally keeping the display on. |
+| **Espresso** | Coffee that keeps going with the lid closed, so downloads and builds finish while the Mac is shut. Asks for your password once; normal lid sleep comes back when Coffee ends, on quit, after a crash and at low battery. |
 | **Claude usage** | 5-hour and weekly usage of a Claude subscription, read from Claude Code's login, plus the state of recent Claude Code sessions. |
 | **Languages** | English, Türkçe, Deutsch. Follows the system language by default; can be changed in Settings › General. |
 
