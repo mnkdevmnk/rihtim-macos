@@ -2,6 +2,26 @@
 
 [English](README.md) · **Türkçe**
 
+## Kurulum
+
+### Kendi Mac'inde derle
+Gereken: macOS 14+, Xcode.
+```bash
+git clone https://github.com/mnkdevmnk/rihtim-macos.git
+cd rihtim-macos
+./build.sh install      # Rihtim.app derler, Rihtim.dmg'yi masaüstüne koyar, /Applications'a kurar
+```
+
+### Hazır .app (GitHub Actions)
+`main`'e her push'ta macOS makinesinde derlenir. Actions sekmesindeki çalışmanın altında **Rihtim** adıyla (içinde `Rihtim.dmg`) indirilir. `v0.13.0` gibi bir etiket atılırsa Releases'e de eklenir.
+
+İnternetten indirilen ve ad-hoc imzalı olduğu için ilk açılışta macOS engeller:
+```bash
+xattr -dr com.apple.quarantine /Applications/Rihtim.app
+```
+
+## Hakkında
+
 Notch, Dock ve menü çubuğunu tek uygulamadan yöneten macOS eklentisi. Gerçek Dock'u bozmadan üstüne özellik ekler.
 
 Rıhtım gerçek Dock'u gizlemez, kopyasını çizmez, `killall Dock` yapmaz ve `com.apple.dock` ayarlarına yazmaz. Dock'u Erişilebilirlik API'siyle sadece dinler ve widget'ları ayrı bir panel olarak yanına koyar.
@@ -27,24 +47,6 @@ Rıhtım gerçek Dock'u gizlemez, kopyasını çizmez, `killall Dock` yapmaz ve 
 
 ### ⌘⇥ kısayolları (⌘ basılıyken)
 `⇥` / `⇧⇥` / `← →` uygulama seç · `↑ ↓` ya da `` ` `` pencere seç · `Q` uygulamadan çık · `H` gizle · `W` pencereyi kapat · `Esc` iptal · ⌘'yi bırakınca geçer
-
-## Kurulum
-
-### Kendi Mac'inde derle
-Gereken: macOS 14+, Xcode.
-```bash
-git clone https://github.com/mnkdevmnk/rihtim-macos.git
-cd rihtim-macos
-./build.sh install      # Rihtim.app derler, Rihtim.dmg'yi masaüstüne koyar, /Applications'a kurar
-```
-
-### Hazır .app (GitHub Actions)
-`main`'e her push'ta macOS makinesinde derlenir. Actions sekmesindeki çalışmanın altında **Rihtim** adıyla (içinde `Rihtim.dmg`) indirilir. `v0.13.0` gibi bir etiket atılırsa Releases'e de eklenir.
-
-İnternetten indirilen ve ad-hoc imzalı olduğu için ilk açılışta macOS engeller:
-```bash
-xattr -dr com.apple.quarantine /Applications/Rihtim.app
-```
 
 ## İzinler
 1. **Erişilebilirlik:** Dock'u dinlemek, pencereler ve ⌘⇥ için şart.

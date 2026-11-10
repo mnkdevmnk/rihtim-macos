@@ -2,6 +2,26 @@
 
 **English** · [Türkçe](README.tr.md)
 
+## Install
+
+### Build it yourself
+Requires macOS 14+ and Xcode (or the Command Line Tools with Swift 5.9+).
+```bash
+git clone https://github.com/mnkdevmnk/rihtim-macos.git
+cd rihtim-macos
+./build.sh install      # builds Rihtim.app, puts Rihtim.dmg on the Desktop and installs to /Applications
+```
+
+### Prebuilt DMG
+Every push to `main` is built on GitHub Actions; the DMG is attached to the run as **Rihtim**. Version tags (`v0.13.0`) also publish it under Releases.
+
+The build is ad-hoc signed, so macOS blocks it on first launch. After copying it to Applications:
+```bash
+xattr -dr com.apple.quarantine /Applications/Rihtim.app
+```
+
+## About
+
 A macOS add-on that puts the notch, the Dock and the menu bar under one app. It adds features on top of the real Dock without breaking it.
 
 Rıhtım never hides the Dock, never draws a copy of it, never runs `killall Dock` and never writes to `com.apple.dock`. It only *watches* the Dock through the Accessibility API and places its widgets next to it in a separate panel.
@@ -28,24 +48,6 @@ Rıhtım never hides the Dock, never draws a copy of it, never runs `killall Doc
 
 ### ⌘⇥ shortcuts (while ⌘ is held)
 `⇥` / `⇧⇥` / `← →` pick app · `↑ ↓` or `` ` `` pick window · `Q` quit app · `H` hide · `W` close window · `Esc` cancel · release ⌘ to switch
-
-## Install
-
-### Build it yourself
-Requires macOS 14+ and Xcode (or the Command Line Tools with Swift 5.9+).
-```bash
-git clone https://github.com/mnkdevmnk/rihtim-macos.git
-cd rihtim-macos
-./build.sh install      # builds Rihtim.app, puts Rihtim.dmg on the Desktop and installs to /Applications
-```
-
-### Prebuilt DMG
-Every push to `main` is built on GitHub Actions; the DMG is attached to the run as **Rihtim**. Version tags (`v0.13.0`) also publish it under Releases.
-
-The build is ad-hoc signed, so macOS blocks it on first launch. After copying it to Applications:
-```bash
-xattr -dr com.apple.quarantine /Applications/Rihtim.app
-```
 
 ## Permissions
 1. **Accessibility:** required to watch the Dock, for windows, gestures, snapping and ⌘⇥.
