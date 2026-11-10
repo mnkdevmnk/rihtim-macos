@@ -90,16 +90,19 @@ enum WindowEnumerator {
         }
         let deadline = Date().addingTimeInterval(0.12)
         for elementID: UInt64 in 0..<1000 {
+            if Date() > deadline { break }
             token.withUnsafeMutableBytes { $0.storeBytes(of: elementID, toByteOffset: 12, as: UInt64.self) }
             guard let el = _AXUIElementCreateWithRemoteToken(token as CFData)?.takeRetainedValue() else { continue }
             AXUIElementSetMessagingTimeout(el, 0.05)
+            // Other elements can report the same window ID (Safari has one right after its
+            // window); keep only the AXWindow, or it overwrites the real one and gets dropped.
             let id = AX.windowID(el)
-            if id != 0 { cache[id] = el }
+            guard id != 0, AX.string(el, kAXRoleAttribute) == kAXWindowRole as String else { continue }
+            cache[id] = el
             if wanted.contains(id) {
                 found[id] = el
                 if found.count == wanted.count { break }
             }
-            if Date() > deadline { break }
         }
         remoteCache[pid] = cache
         return found

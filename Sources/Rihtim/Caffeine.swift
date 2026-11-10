@@ -47,11 +47,13 @@ final class Caffeine: ObservableObject {
         let d = UserDefaults.standard
         // Espresso was called Milk at first; the stored keys keep that name.
         d.register(defaults: ["caffeineDisplay": true, "caffeineMilkMinBattery": 15])
-        keepDisplayOn = d.bool(forKey: "caffeineDisplay")
-        espressoMinBattery = d.integer(forKey: "caffeineMilkMinBattery")
-        // Set before `espresso`'s didSet can matter: Coffee starts off, so nothing is applied.
-        espresso = d.bool(forKey: "caffeineMilk")
+        // Restore lid sleep first if the last run crashed with Espresso on.
         LidSleep.cleanUpAfterCrash()
+        // Set the wrappers directly: a plain assignment runs didSet here, and Espresso's
+        // didSet would switch Coffee on at launch.
+        _keepDisplayOn = Published(initialValue: d.bool(forKey: "caffeineDisplay"))
+        _espressoMinBattery = Published(initialValue: d.integer(forKey: "caffeineMilkMinBattery"))
+        _espresso = Published(initialValue: d.bool(forKey: "caffeineMilk"))
     }
 
     /// Called on quit: never leave lid sleep disabled behind.
