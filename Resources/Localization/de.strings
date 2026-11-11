@@ -495,7 +495,6 @@
 "Tabs" = "Tabs";
 "Volume and brightness HUD" = "Anzeige für Lautstärke und Helligkeit";
 "Show the volume and brightness HUD in the notch (instead of macOS's)" = "Lautstärke- und Helligkeitsanzeige in der Notch (statt der von macOS)";
-"Rıhtım catches the volume, brightness and mute keys and shows them. At 100% brightness, ⌘ + up goes into extra; while in extra, down lowers the extra first. Hold ⌥⇧ for fine steps. Turn this off to get the macOS HUD back." = "Rıhtım fängt Lautstärke-, Helligkeits- und Stummtasten ab und zeigt sie an. Bei 100 % Helligkeit schaltet ⌘ + heller in den Extra-Modus; im Extra-Modus senkt dunkler zuerst das Extra. ⌥⇧ für feine Schritte. Ausschalten bringt die macOS-Anzeige zurück.";
 "Push the display past the SDR limit" = "Bildschirm über die SDR-Grenze hinaus aufhellen";
 "Panic switch: ⌃⌥⌘B or Esc three times. The display returns to normal on its own when Rıhtım quits." = "Notschalter: ⌃⌥⌘B oder dreimal Esc. Beim Beenden von Rıhtım wird der Bildschirm automatisch normal.";
 "This display has no EDR (HDR) headroom, so extra brightness isn't available." = "Dieser Bildschirm bietet keinen EDR-Spielraum (HDR), Extra-Helligkeit ist nicht verfügbar.";
@@ -555,3 +554,14 @@
 "Turns Coffee on and runs `pmset disablesleep` so the Mac doesn't sleep when the lid closes. Asks for your password once (a sudoers rule that allows only that command). Lid sleep comes back when Coffee ends, on quit, and after a crash. Don't put the Mac in a bag while Espresso is on: it can get hot." = "Schaltet Kaffee ein und führt `pmset disablesleep` aus, damit der Mac beim Zuklappen nicht schläft. Fragt einmal nach dem Passwort (eine sudoers-Regel nur für diesen Befehl). Der Deckel-Ruhezustand kommt zurück, wenn Kaffee endet, beim Beenden und nach einem Absturz. Den Mac mit Espresso nicht in die Tasche stecken: er kann heiß werden.";
 "Espresso on: keeps running with the lid closed" = "Espresso an: läuft bei geschlossenem Deckel weiter";
 "Espresso off" = "Espresso aus";
+
+/* Keys: step per press, keyboard backlight */
+"Rıhtım catches the volume, brightness and mute keys and shows them. Brightness keys change the display; ⌥ + brightness keys change the keyboard backlight. At 100% brightness, ⌘ + up goes into extra; while in extra, down lowers the extra first. ⇧ (⌥⇧ for volume) makes a quarter step. Turn this off to get the macOS HUD back." = "Rıhtım fängt Lautstärke-, Helligkeits- und Stummtasten ab und zeigt sie an. Helligkeitstasten ändern den Bildschirm, ⌥ + Helligkeitstasten die Tastaturbeleuchtung. Bei 100 % Helligkeit schaltet ⌘ + heller in den Extra-Modus; im Extra-Modus senkt dunkler zuerst das Extra. ⇧ (bei Lautstärke ⌥⇧) für Viertelschritte. Ausschalten bringt die macOS-Anzeige zurück.";
+"Step per key press" = "Schritt pro Tastendruck";
+"%@%% per press" = "%@ %% pro Druck";
+"Volume" = "Lautstärke";
+"Display brightness" = "Bildschirmhelligkeit";
+"Keyboard backlight (⌥)" = "Tastaturbeleuchtung (⌥)";
+"No backlit keyboard found." = "Keine beleuchtete Tastatur gefunden.";
+"6.25% = 16 steps, like macOS." = "6,25 % = 16 Schritte wie bei macOS.";
+"Reset" = "Zurücksetzen";

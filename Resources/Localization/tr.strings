@@ -495,7 +495,6 @@
 "Tabs" = "Sekmeler";
 "Volume and brightness HUD" = "Ses ve parlaklık göstergesi";
 "Show the volume and brightness HUD in the notch (instead of macOS's)" = "Ses ve parlaklık göstergesi notch'ta (macOS'unki yerine)";
-"Rıhtım catches the volume, brightness and mute keys and shows them. At 100% brightness, ⌘ + up goes into extra; while in extra, down lowers the extra first. Hold ⌥⇧ for fine steps. Turn this off to get the macOS HUD back." = "Ses, parlaklık ve sessiz tuşlarını Rıhtım yakalar ve gösterir. Parlaklık %100'deyken ⌘ + artır ekstraya geçer; ekstradayken azalt önce ekstrayı düşürür. ⌥⇧ basılıyken ince adım. Kapatınca macOS'un kendi göstergesi geri gelir.";
 "Push the display past the SDR limit" = "Ekranı SDR sınırının üstüne çıkar";
 "Panic switch: ⌃⌥⌘B or Esc three times. The display returns to normal on its own when Rıhtım quits." = "Acil kapatma: ⌃⌥⌘B ya da art arda 3 kez Esc. Rıhtım kapanınca ekran kendiliğinden normale döner.";
 "This display has no EDR (HDR) headroom, so extra brightness isn't available." = "Bu ekran EDR (HDR) payı vermiyor; ekstra parlaklık kullanılamaz.";
@@ -555,3 +554,14 @@
 "Turns Coffee on and runs `pmset disablesleep` so the Mac doesn't sleep when the lid closes. Asks for your password once (a sudoers rule that allows only that command). Lid sleep comes back when Coffee ends, on quit, and after a crash. Don't put the Mac in a bag while Espresso is on: it can get hot." = "Kahve'yi açar ve `pmset disablesleep` çalıştırır, böylece kapak kapanınca Mac uyumaz. Bir kez şifre ister (sadece o komuta izin veren bir sudoers kuralı). Kahve bitince, çıkışta ve çökme sonrası kapak uykusu geri gelir. Espresso açıkken Mac'i çantaya koyma, ısınabilir.";
 "Espresso on: keeps running with the lid closed" = "Espresso açık: kapak kapalıyken de çalışır";
 "Espresso off" = "Espresso kapalı";
+
+/* Keys: step per press, keyboard backlight */
+"Rıhtım catches the volume, brightness and mute keys and shows them. Brightness keys change the display; ⌥ + brightness keys change the keyboard backlight. At 100% brightness, ⌘ + up goes into extra; while in extra, down lowers the extra first. ⇧ (⌥⇧ for volume) makes a quarter step. Turn this off to get the macOS HUD back." = "Ses, parlaklık ve sessiz tuşlarını Rıhtım yakalar ve gösterir. Parlaklık tuşları ekranı, ⌥ + parlaklık tuşları klavye aydınlatmasını değiştirir. Parlaklık %100'deyken ⌘ + artır ekstraya geçer; ekstradayken azalt önce ekstrayı düşürür. ⇧ (seste ⌥⇧) çeyrek adım. Kapatınca macOS'un kendi göstergesi geri gelir.";
+"Step per key press" = "Tuş başına adım";
+"%@%% per press" = "basış başına %%%@";
+"Volume" = "Ses";
+"Display brightness" = "Ekran parlaklığı";
+"Keyboard backlight (⌥)" = "Klavye aydınlatması (⌥)";
+"No backlit keyboard found." = "Aydınlatmalı klavye bulunamadı.";
+"6.25% = 16 steps, like macOS." = "%6,25 = macOS gibi 16 adım.";
+"Reset" = "Sıfırla";

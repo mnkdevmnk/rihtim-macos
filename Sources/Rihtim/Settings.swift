@@ -35,6 +35,10 @@ enum Prefs {
     static let notchHome = "notch.home"
     static let notchHUD = "notch.hud"
     static let notchAutoSize = "notch.autoSize"
+    /// Percent per key press (⇧ = a quarter of it).
+    static let stepVolume = "keys.stepVolume"
+    static let stepBrightness = "keys.stepBrightness"
+    static let stepKeyboard = "keys.stepKeyboard"
     static let barRevealDelay = "bar.revealDelay"
     static let barRevealDuration = "bar.revealDuration"
     static let barHeightMode = "bar.heightMode"
@@ -137,6 +141,7 @@ enum Prefs {
             notchTabs: NotchTab.allCases.map(\.rawValue).joined(separator: ","),
             notchWidth: 660.0, notchSoftness: 1.0, notchHoverDelay: 0.12,
             notchHome: "music,system,usage,coffee", notchAutoSize: true, notchHUD: true,
+            stepVolume: 6.25, stepBrightness: 6.25, stepKeyboard: 6.25,
             barRevealDelay: 0.5, barRevealDuration: 0.35,
             barHeightMode: BarHeightMode.dock.rawValue, barHeightAdjust: 0.0, barManualHeight: 60.0,
             barOffsetY: 0.0, barGap: 8.0, barRadius: 0.42, barGlass: GlassKind.regular.rawValue,
@@ -940,6 +945,15 @@ private struct NotchPage: View {
     @AppStorage(Prefs.notchHoverDelay) private var hoverDelay = 0.12
     @AppStorage(Prefs.notchAutoSize) private var autoSize = true
     @AppStorage(Prefs.notchHUD) private var hud = true
+    @AppStorage(Prefs.stepVolume) private var stepVolume = 6.25
+    @AppStorage(Prefs.stepBrightness) private var stepBrightness = 6.25
+    @AppStorage(Prefs.stepKeyboard) private var stepKeyboard = 6.25
+
+    private func stepRow(_ title: String, _ value: Binding<Double>) -> some View {
+        Slider(value: value, in: 1...25, step: 0.25) {
+            Text(title + ": " + L("%@%% per press", String(format: "%g", value.wrappedValue)))
+        }
+    }
 
     var body: some View {
         Form {
@@ -959,9 +973,23 @@ private struct NotchPage: View {
             case .notch_media:
                 Section(L("Volume and brightness HUD")) {
                     Toggle(L("Show the volume and brightness HUD in the notch (instead of macOS's)"), isOn: $hud)
-                    Text(L("Rıhtım catches the volume, brightness and mute keys and shows them. At 100% brightness, ⌘ + up goes into extra; while in extra, down lowers the extra first. Hold ⌥⇧ for fine steps. Turn this off to get the macOS HUD back."))
+                    Text(L("Rıhtım catches the volume, brightness and mute keys and shows them. Brightness keys change the display; ⌥ + brightness keys change the keyboard backlight. At 100% brightness, ⌘ + up goes into extra; while in extra, down lowers the extra first. ⇧ (⌥⇧ for volume) makes a quarter step. Turn this off to get the macOS HUD back."))
                         .font(.caption).foregroundColor(.secondary)
                 }.disabled(!notch)
+                Section(L("Step per key press")) {
+                    stepRow(L("Volume"), $stepVolume)
+                    stepRow(L("Display brightness"), $stepBrightness)
+                    stepRow(L("Keyboard backlight (⌥)"), $stepKeyboard)
+                        .disabled(!KeyboardBacklight.isAvailable)
+                    if !KeyboardBacklight.isAvailable {
+                        Text(L("No backlit keyboard found.")).font(.caption).foregroundColor(.secondary)
+                    }
+                    HStack {
+                        Text(L("6.25% = 16 steps, like macOS.")).font(.caption).foregroundColor(.secondary)
+                        Spacer()
+                        Button(L("Reset")) { stepVolume = 6.25; stepBrightness = 6.25; stepKeyboard = 6.25 }
+                    }
+                }.disabled(!notch || !hud)
                 Section(L("Extra brightness (EDR)")) {
                 if BrightnessBoost.isSupported {
                     Toggle(L("Push the display past the SDR limit"), isOn: Binding(get: { brightness.isActive },

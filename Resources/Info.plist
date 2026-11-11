@@ -9,8 +9,8 @@
 	<key>CFBundleName</key><string>Rıhtım</string>
 	<key>CFBundleDisplayName</key><string>Rıhtım</string>
 	<key>CFBundlePackageType</key><string>APPL</string>
-	<key>CFBundleShortVersionString</key><string>0.13.6</string>
-	<key>CFBundleVersion</key><string>27</string>
+	<key>CFBundleShortVersionString</key><string>0.14.0</string>
+	<key>CFBundleVersion</key><string>28</string>
 	<key>LSMinimumSystemVersion</key><string>14.0</string>
 	<key>LSUIElement</key><true/>
 	<key>NSHighResolutionCapable</key><true/>

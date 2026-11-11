@@ -3,8 +3,10 @@ import CoreAudio
 
 /// Grabs the volume and brightness keys before the system does (CGEventTap), applies them
 /// itself and draws the HUD in the notch, so the macOS overlay never shows up.
+/// ⌥ + brightness keys drive the keyboard backlight instead. Step per press comes from
+/// Settings (`Prefs.stepVolume` / `stepBrightness` / `stepKeyboard`, in percent); ⇧ makes it a quarter.
 /// Anything we can't handle (say an HDMI output without volume control) is passed through.
-enum HUDKind { case volume, brightness }
+enum HUDKind { case volume, brightness, keyboard }
 
 enum SystemAudio {
     private static func addr(_ sel: AudioObjectPropertySelector,
@@ -155,23 +157,41 @@ final class MediaKeyController {
 
     /// true = event swallowed, the system never sees it.
     fileprivate func handle(code: Int, down: Bool, flags: NSEvent.ModifierFlags) -> Bool {
-        let fine = flags.contains(.option) && flags.contains(.shift)
         switch code {
         case 0, 1, 7:   // volume up, volume down, mute
             guard let dev = SystemAudio.defaultOutput(), SystemAudio.volume(dev) != nil || code == 7 else { return false }
-            if down { volumeKey(dev: dev, code: code, fine: fine) }
+            let fine = flags.contains(.option) && flags.contains(.shift)
+            if down { volumeKey(dev: dev, code: code, step: Self.step(Prefs.stepVolume, fine: fine)) }
             return true
         case 2, 3:      // brightness up, brightness down
+            let fine = flags.contains(.shift)
+            if flags.contains(.option), KeyboardBacklight.isAvailable {
+                if down { keyboardKey(up: code == 2, step: Self.step(Prefs.stepKeyboard, fine: fine)) }
+                return true
+            }
             guard BrightnessBoost.canControlBrightness else { return false }
-            if down { brightnessKey(up: code == 2, command: flags.contains(.command), fine: fine) }
+            if down { brightnessKey(up: code == 2, command: flags.contains(.command),
+                                    step: Self.step(Prefs.stepBrightness, fine: fine)) }
             return true
         default:
             return false
         }
     }
 
-    private func volumeKey(dev: AudioDeviceID, code: Int, fine: Bool) {
-        let step: Float = fine ? 1.0 / 64 : 1.0 / 16
+    /// Percent from Settings → fraction; fine = a quarter of it.
+    private static func step(_ key: String, fine: Bool) -> Float {
+        let pct = UserDefaults.standard.double(forKey: key)
+        let s = Float(min(max(pct > 0 ? pct : 6.25, 0.5), 50) / 100)
+        return fine ? s / 4 : s
+    }
+
+    /// Snap to the step grid, then move one step (so 6.25% steps land on 0, 6.25, 12.5 … 100).
+    private static func stepped(_ v: Float, _ step: Float, up: Bool) -> Float {
+        let base = (v / step).rounded() * step
+        return min(1, max(0, base + (up ? step : -step)))
+    }
+
+    private func volumeKey(dev: AudioDeviceID, code: Int, step: Float) {
         var muted = SystemAudio.isMuted(dev)
         var v = SystemAudio.volume(dev) ?? 0
         switch code {
@@ -180,18 +200,23 @@ final class MediaKeyController {
             SystemAudio.setMuted(dev, muted)
         case 0:
             if muted { muted = false; SystemAudio.setMuted(dev, false) }
-            v = min(1, (v / step).rounded() * step + step)
+            v = Self.stepped(v, step, up: true)
             SystemAudio.setVolume(dev, v)
         default:
-            v = max(0, (v / step).rounded() * step - step)
+            v = Self.stepped(v, step, up: false)
             SystemAudio.setVolume(dev, v)
             if v == 0 { muted = true; SystemAudio.setMuted(dev, true) }
         }
         onHUD?(.volume, Double(muted ? 0 : v), SystemAudio.name(dev), muted)
     }
 
-    private func brightnessKey(up: Bool, command: Bool, fine: Bool) {
-        let step: Float = fine ? 1.0 / 64 : 1.0 / 16
+    private func keyboardKey(up: Bool, step: Float) {
+        let cur = KeyboardBacklight.level() ?? 0
+        KeyboardBacklight.setLevel(Self.stepped(cur, step, up: up))
+        onHUD?(.keyboard, Double(KeyboardBacklight.level() ?? cur), "", false)
+    }
+
+    private func brightnessKey(up: Bool, command: Bool, step: Float) {
         let cur = BrightnessBoost.systemBrightness() ?? 1
         var hint = ""
         if up {
@@ -204,13 +229,13 @@ final class MediaKeyController {
                     hint = L("⌘ for extra")
                 }
             } else {
-                BrightnessBoost.setSystemBrightness(min(1, cur + step))
+                BrightnessBoost.setSystemBrightness(Self.stepped(cur, step, up: true))
             }
         } else {
             if brightness.isActive {
                 brightness.adjustExtra(by: -Double(step))   // turns itself off at 100%
             } else {
-                BrightnessBoost.setSystemBrightness(max(0, cur - step))
+                BrightnessBoost.setSystemBrightness(Self.stepped(cur, step, up: false))
             }
         }
         let level = brightness.isActive ? brightness.factor : Double(BrightnessBoost.systemBrightness() ?? cur)

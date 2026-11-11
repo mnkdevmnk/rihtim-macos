@@ -825,6 +825,9 @@ final class NotchController {
                               text: label.isEmpty ? "\(pct)%" : "\(pct)% · \(label)",
                               color: extra ? .orange : .yellow,
                               progress: extra ? 1 : level), seconds: 1.4, force: true)
+        case .keyboard:
+            flash(NotchBanner(symbol: level <= 0.001 ? "light.min" : "light.max",
+                              text: "\(pct)%", color: .white, progress: level), seconds: 1.4, force: true)
         }
     }
 
